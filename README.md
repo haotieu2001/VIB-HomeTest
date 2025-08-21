@@ -3,11 +3,9 @@
 This is a FastAPI-based task management service that accepts tasks, queues them using RabbitMQ, and processes them in the background.
 
 <div align="center">
-  <video width="800" controls>
-    <source src="demo.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-  <p><em>TaskMaster Demo Video</em></p>
+  <a href="https://www.youtube.com/watch?v=eWtsSxEtDAw">
+  </a>
+  <p><em>TaskMaster Demo Video - Click to watch</em></p>
 </div>
 
 ## 🚀 Features
