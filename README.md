@@ -4,9 +4,9 @@ This is a FastAPI-based task management service that accepts tasks, queues them 
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=eWtsSxEtDAw">
+    <img src="https://img.youtube.com/vi/eWtsSxEtDAw/maxresdefault.jpg" alt="TaskMaster Demo Video" width="800">
   </a>
   <p><em>TaskMaster Demo Video - Click to watch</em></p>
-</div>
 
 ## 🚀 Features
 
