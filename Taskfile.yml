@@ -1,0 +1,90 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+
+  start-rabbitmq:
+    desc: Start RabbitMQ message broker with management interface
+    cmds:
+      - docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4-management
+
+  start-app:
+    desc: Start the TaskMaster FastAPI application on port 8000
+    cmds:
+      - python taskmaster.py
+
+  send-test-1:
+    desc: Send 6 test tasks to the API endpoint
+    cmds:
+      - |
+        echo "Sending test tasks to API..."
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 1 for normal tasks"}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 2 for normal tasks"}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 3 for normal tasks"}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 4 for normal tasks"}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 5 for normal tasks"}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 6 for normal tasks"}'
+        echo -e "\nAll test normal tasks sent!"
+
+  send-test-2:
+    desc: Send 3 ordered tasks to the API endpoint
+    cmds:
+      - |
+        echo "Sending ordered tasks to API..."
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 1 for ordered tasks.", "requires_ordering": true}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 2 for ordered tasks.", "requires_ordering": true}'
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is Task 3 for ordered tasks.", "requires_ordering": true}'
+        echo -e "\nAll test ordered tasks sent!"
+        
+  send-test-3:
+    desc: Send 3 dependency tasks and create a dependent task using task 3 ID
+    cmds:
+      - |
+        echo "Sending dependency test tasks..."
+        curl -s -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is the task 1 use for test dependency."}'
+        curl -s -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is the task 2 use for test dependency."}'
+        TASK3_RESPONSE=$(curl -s -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d '{"message": "This is the task 3 use for test dependency."}')
+        TASK3_ID=$(echo "$TASK3_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+        echo -e "$TASK3_RESPONSE"
+        echo "Creating dependent task..."
+        curl -X POST "http://localhost:8000/api/tasks" -H "Content-Type: application/json" -d "{\"message\": \"This is a dependent task that requires task 3 to complete first.\", \"dependencies\": [\"$TASK3_ID\"]}"
+        echo -e "\nDependency test completed!"
+
+  send-test-4:
+    desc: Send initial task and two dependent ordered tasks
+    cmds:
+      - |
+        echo "Creating initial task and capturing its ID..."
+        INITIAL_RESPONSE=$(curl -s -X POST http://localhost:8000/api/tasks -H "Content-Type: application/json" -d '{"message": "This is initial tasks.", "dependencies": [], "requires_ordering": false}')
+        INITIAL_ID=$(echo "$INITIAL_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+        echo -e "$INITIAL_RESPONSE"
+        echo "Initial task ID: $INITIAL_ID"
+        echo -e "\nCreating first dependent ordered task..."
+        curl -s -X POST http://localhost:8000/api/tasks -H "Content-Type: application/json" -d "{\"message\": \"This is the first task after the initial task.\", \"dependencies\": [\"$INITIAL_ID\"], \"requires_ordering\": true}"
+        
+        echo -e "\nCreating second dependent ordered task..."
+        curl -s -X POST http://localhost:8000/api/tasks -H "Content-Type: application/json" -d "{\"message\": \"This is the second task after the initial task.\", \"dependencies\": [\"$INITIAL_ID\"], \"requires_ordering\": true}"
+        echo -e "\nInitial + dependent ordered tasks test completed!"
+
+  check-all:
+    desc: Get all tasks from the API endpoint
+    cmds:
+      - | 
+        curl -X GET http://localhost:8000/api/tasks
+        echo -e "\n"
+
+  check:
+    desc: Get a specific task from the API endpoint
+    cmds:
+    # TASK_ID is a variable that is set in the command line
+      - |
+        curl -X GET http://localhost:8000/api/tasks/{{.TASK_ID}}
+        echo -e "\n"
